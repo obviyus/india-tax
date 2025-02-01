@@ -13,6 +13,8 @@ interface TaxResult {
 		amount: number;
 	}>;
 	baseTax: number;
+	rebate87A: number;
+	taxAfterRebate: number;
 	surcharge: number;
 	cess: number;
 	totalTax: number;
@@ -26,17 +28,21 @@ interface ComparisonResult {
 	proposed: TaxResult;
 }
 
+// Current Regime Tax Slabs (No changes)
 const CURRENT_TAX_SLABS: TaxSlab[] = [
 	{ limit: 300000, rate: 0 },
-	{ limit: 700000, rate: 0.05 },
-	{ limit: 1000000, rate: 0.1 },
+	{ limit: 600000, rate: 0.05 },
+	{ limit: 900000, rate: 0.1 },
 	{ limit: 1200000, rate: 0.15 },
 	{ limit: 1500000, rate: 0.2 },
 	{ limit: Number.POSITIVE_INFINITY, rate: 0.3 },
 ];
 
+// Proposed Regime Tax Slabs (Budget 2025)
 const PROPOSED_TAX_SLABS: TaxSlab[] = [
-	{ limit: 1200000, rate: 0 },
+	{ limit: 400000, rate: 0 },
+	{ limit: 800000, rate: 0.05 },
+	{ limit: 1200000, rate: 0.1 },
 	{ limit: 1600000, rate: 0.15 },
 	{ limit: 2000000, rate: 0.2 },
 	{ limit: 2400000, rate: 0.25 },
@@ -52,7 +58,11 @@ const SURCHARGE_SLABS: TaxSlab[] = [
 ];
 
 const CESS_RATE = 0.04;
-const STANDARD_DEDUCTION = 75000;
+const STANDARD_DEDUCTION = 50000;
+const REBATE_87A_LIMIT_CURRENT = 700000;
+const MAX_REBATE_87A_CURRENT = 25000;
+const REBATE_87A_LIMIT_PROPOSED = 1200000; // Increased limit for proposed regime
+const MAX_REBATE_87A_PROPOSED = 60000; // Increased rebate for proposed regime
 
 const formatCurrency = (amount: number) =>
 	new Intl.NumberFormat("en-IN", {
@@ -68,7 +78,7 @@ export default function TaxCalculator() {
 	const calculateTax = (income: number, slabs: TaxSlab[]) => {
 		const taxableIncome = Math.max(0, income - STANDARD_DEDUCTION);
 		let remainingIncome = taxableIncome;
-		let totalTax = 0;
+		let baseTax = 0;
 		const slabwiseTax = [];
 		let previousLimit = 0;
 
@@ -91,12 +101,28 @@ export default function TaxCalculator() {
 				});
 			}
 
-			totalTax += taxForSlab;
+			baseTax += taxForSlab;
 			remainingIncome -= slabIncome;
 			previousLimit = slab.limit;
 
 			if (remainingIncome <= 0) break;
 		}
+
+		// Calculate rebate under 87A
+		let rebate87A = 0;
+		if (
+			slabs === CURRENT_TAX_SLABS &&
+			taxableIncome <= REBATE_87A_LIMIT_CURRENT
+		) {
+			rebate87A = Math.min(baseTax, MAX_REBATE_87A_CURRENT);
+		} else if (
+			slabs === PROPOSED_TAX_SLABS &&
+			taxableIncome <= REBATE_87A_LIMIT_PROPOSED
+		) {
+			rebate87A = Math.min(baseTax, MAX_REBATE_87A_PROPOSED);
+		}
+
+		const taxAfterRebate = baseTax - rebate87A;
 
 		let surchargeRate = 0;
 		for (const slab of SURCHARGE_SLABS) {
@@ -106,16 +132,18 @@ export default function TaxCalculator() {
 			}
 		}
 
-		const surcharge = totalTax * surchargeRate;
-		const cess = (totalTax + surcharge) * CESS_RATE;
+		const surcharge = taxAfterRebate * surchargeRate;
+		const cess = (taxAfterRebate + surcharge) * CESS_RATE;
 
 		return {
 			slabwiseTax,
-			baseTax: totalTax,
+			baseTax,
+			rebate87A,
+			taxAfterRebate,
 			surcharge,
 			cess,
-			totalTax: totalTax + surcharge + cess,
-			effectiveRate: ((totalTax + surcharge + cess) / income) * 100,
+			totalTax: taxAfterRebate + surcharge + cess,
+			effectiveRate: ((taxAfterRebate + surcharge + cess) / income) * 100,
 			taxableIncome,
 			standardDeduction: STANDARD_DEDUCTION,
 		};
@@ -193,7 +221,7 @@ export default function TaxCalculator() {
 								{/* Proposed Regime */}
 								<div>
 									<h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-3 sm:mb-4 border-b border-gray-200 pb-2">
-										Proposed Regime
+										Proposed Regime (Budget 2025)
 									</h3>
 									<div className="space-y-2 sm:space-y-3">
 										{result.proposed.slabwiseTax.map((slab, index) => (
@@ -225,6 +253,7 @@ export default function TaxCalculator() {
 								{/* Empty for alignment */}
 								<div className="text-center font-semibold py-2">Current</div>
 								<div className="text-center font-semibold py-2">Proposed</div>
+								{/* Gross Income */}
 								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
 									<div className="font-semibold">Gross Income</div>
 									<div className="text-right">
@@ -234,6 +263,7 @@ export default function TaxCalculator() {
 										{formatCurrency(Number(income))}
 									</div>
 								</div>
+								{/* Standard Deduction */}
 								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
 									<div className="text-gray-600 font-semibold">
 										Standard Deduction (−)
@@ -245,6 +275,7 @@ export default function TaxCalculator() {
 										{formatCurrency(STANDARD_DEDUCTION)}
 									</div>
 								</div>
+								{/* Taxable Income */}
 								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
 									<div className="font-semibold">Taxable Income</div>
 									<div className="text-right">
@@ -254,6 +285,7 @@ export default function TaxCalculator() {
 										{formatCurrency(result.proposed.taxableIncome)}
 									</div>
 								</div>
+								{/* Base Tax */}
 								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
 									<div className="font-semibold">Base Tax</div>
 									<div className="text-right">
@@ -263,7 +295,11 @@ export default function TaxCalculator() {
 										{formatCurrency(result.proposed.baseTax)}
 										{result.proposed.baseTax !== result.current.baseTax && (
 											<span
-												className={`${result.proposed.baseTax < result.current.baseTax ? "text-green-500" : "text-red-500"} text-base`}
+												className={`${
+													result.proposed.baseTax < result.current.baseTax
+														? "text-green-500"
+														: "text-red-500"
+												} text-base`}
 											>
 												{result.proposed.baseTax < result.current.baseTax
 													? "↓"
@@ -272,6 +308,45 @@ export default function TaxCalculator() {
 										)}
 									</div>
 								</div>
+								{/* Rebate 87A */}
+								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
+									<div className="text-gray-600 font-semibold">
+										Rebate under 87A (−)
+									</div>
+									<div className="text-right text-gray-600">
+										{formatCurrency(result.current.rebate87A)}
+									</div>
+									<div className="text-right text-gray-600">
+										{formatCurrency(result.proposed.rebate87A)}
+									</div>
+								</div>
+								{/* Tax After Rebate */}
+								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
+									<div className="font-semibold">Tax After Rebate</div>
+									<div className="text-right">
+										{formatCurrency(result.current.taxAfterRebate)}
+									</div>
+									<div className="text-right flex items-center justify-end gap-2">
+										{formatCurrency(result.proposed.taxAfterRebate)}
+										{result.proposed.taxAfterRebate !==
+											result.current.taxAfterRebate && (
+											<span
+												className={`${
+													result.proposed.taxAfterRebate <
+													result.current.taxAfterRebate
+														? "text-green-500"
+														: "text-red-500"
+												} text-base`}
+											>
+												{result.proposed.taxAfterRebate <
+												result.current.taxAfterRebate
+													? "↓"
+													: "↑"}
+											</span>
+										)}
+									</div>
+								</div>
+								{/* Surcharge */}
 								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
 									<div className="font-semibold">Surcharge</div>
 									<div className="text-right">
@@ -281,7 +356,11 @@ export default function TaxCalculator() {
 										{formatCurrency(result.proposed.surcharge)}
 										{result.proposed.surcharge !== result.current.surcharge && (
 											<span
-												className={`${result.proposed.surcharge < result.current.surcharge ? "text-green-500" : "text-red-500"} text-base`}
+												className={`${
+													result.proposed.surcharge < result.current.surcharge
+														? "text-green-500"
+														: "text-red-500"
+												} text-base`}
 											>
 												{result.proposed.surcharge < result.current.surcharge
 													? "↓"
@@ -290,6 +369,7 @@ export default function TaxCalculator() {
 										)}
 									</div>
 								</div>
+								{/* Health & Education Cess */}
 								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
 									<div className="font-semibold">Health & Education Cess</div>
 									<div className="text-right">
@@ -299,13 +379,18 @@ export default function TaxCalculator() {
 										{formatCurrency(result.proposed.cess)}
 										{result.proposed.cess !== result.current.cess && (
 											<span
-												className={`${result.proposed.cess < result.current.cess ? "text-green-500" : "text-red-500"} text-base`}
+												className={`${
+													result.proposed.cess < result.current.cess
+														? "text-green-500"
+														: "text-red-500"
+												} text-base`}
 											>
 												{result.proposed.cess < result.current.cess ? "↓" : "↑"}
 											</span>
 										)}
 									</div>
 								</div>
+								{/* Total Tax */}
 								<div className="border-b border-gray-100 py-3 grid grid-cols-3 col-span-3">
 									<div className="font-bold">Total Tax</div>
 									<div className="text-right font-bold">
@@ -317,7 +402,11 @@ export default function TaxCalculator() {
 										</span>
 										{result.proposed.totalTax !== result.current.totalTax && (
 											<span
-												className={`${result.proposed.totalTax < result.current.totalTax ? "text-green-600" : "text-red-600"} text-base`}
+												className={`${
+													result.proposed.totalTax < result.current.totalTax
+														? "text-green-600"
+														: "text-red-600"
+												} text-base`}
 											>
 												{result.proposed.totalTax < result.current.totalTax
 													? "↓"
@@ -326,6 +415,7 @@ export default function TaxCalculator() {
 										)}
 									</div>
 								</div>
+								{/* Effective Tax Rate */}
 								<div className="py-3 grid grid-cols-3 col-span-3">
 									<div className="font-semibold">Effective Tax Rate</div>
 									<div className="text-right font-medium">
@@ -336,7 +426,12 @@ export default function TaxCalculator() {
 										{result.proposed.effectiveRate !==
 											result.current.effectiveRate && (
 											<span
-												className={`${result.proposed.effectiveRate < result.current.effectiveRate ? "text-green-500" : "text-red-500"} text-base`}
+												className={`${
+													result.proposed.effectiveRate <
+													result.current.effectiveRate
+														? "text-green-500"
+														: "text-red-500"
+												} text-base`}
 											>
 												{result.proposed.effectiveRate <
 												result.current.effectiveRate
