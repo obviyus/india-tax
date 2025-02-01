@@ -1,48 +1,39 @@
-# Astro Starter Kit: Basics
+# India Income Tax Calculator
 
-```sh
-npm create astro@latest -- --template basics
-```
+This tool compares income tax liability under the current and proposed income tax regimes in India. It deliberately attempts to be simple without adding support for complex scenarios like deductions, exemptions, etc.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/astro/tree/latest/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/astro/tree/latest/examples/basics)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/withastro/astro?devcontainer_path=.devcontainer/basics/devcontainer.json)
+## Tax Slabs
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+### Current Regime (2023-24)
+- Up to ₹3,00,000: 0%
+- ₹3,00,001 to ₹7,00,000: 5%
+- ₹7,00,001 to ₹10,00,000: 10%
+- ₹10,00,001 to ₹12,00,000: 15%
+- ₹12,00,001 to ₹15,00,000: 20%
+- Above ₹15,00,000: 30%
 
-![just-the-basics](https://github.com/withastro/astro/assets/2244813/a0a5533c-a856-4198-8470-2d67b1d7c554)
+### Proposed Regime (2024-25)
+- Up to ₹12,00,000: 0%
+- ₹12,00,001 to ₹16,00,000: 15%
+- ₹16,00,001 to ₹20,00,000: 20%
+- ₹20,00,001 to ₹24,00,000: 25%
+- Above ₹24,00,000: 30%
 
-## 🚀 Project Structure
+## Additional Charges
 
-Inside of your Astro project, you'll see the following folders and files:
+### Surcharge
+- Up to ₹50,00,000: No surcharge
+- ₹50,00,001 to ₹1,00,00,000: 10%
+- ₹1,00,00,001 to ₹2,00,00,000: 15%
+- ₹2,00,00,001 to ₹5,00,00,000: 25%
+- Above ₹5,00,00,000: 37%
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src/
-│   ├── layouts/
-│   │   └── Layout.astro
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+### Cess
+- Health and Education Cess: 4% on (Tax + Surcharge)
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+### Standard Deduction
+- A standard deduction of ₹75,000 is applicable under both regimes
 
-## 🧞 Commands
+## Contribution
 
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+This project is open-source and contributions are welcome. Feel free to raise issues, suggest features, or submit pull requests.

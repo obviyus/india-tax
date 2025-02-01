@@ -1,11 +1,17 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import Layout from "../layouts/Layout.astro";
+import TaxCalculator from "../components/TaxCalculator";
 ---
 
 <Layout>
-	<Welcome />
+	<main
+		class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8"
+	>
+		<div class="max-w-4xl mx-auto">
+			<h1 class="text-4xl font-bold text-gray-900 text-center mb-2">
+				India Income Tax Comparision
+			</h1>
+			<TaxCalculator client:load />
+		</div>
+	</main>
 </Layout>
