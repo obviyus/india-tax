@@ -377,6 +377,14 @@ export default function TaxCalculator() {
 								)}
 							</p>
 						</div>
+
+						{/* Info Note */}
+						<div className="mt-4 p-4 bg-blue-50 rounded-lg">
+							<p className="text-sm text-blue-700">
+								Note: This calculation assumes that surcharges and cess rates
+								remain the same in the proposed regime.
+							</p>
+						</div>
 					</>
 				)}
 			</div>
